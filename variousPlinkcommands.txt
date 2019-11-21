@@ -1,0 +1,27 @@
+
+cd c:\users\celia.greenwood\Dropbox\HackathonNov2019MNI
+
+c:\CeliaFiles\Programs\PLINK\plink --allow-no-sex --bfile samplePop --covar sampleCovar.txt  --linear --out testGWAS --pheno samplePheno.txt
+
+c:\CeliaFiles\Programs\PLINK\plink --allow-no-sex --bfile samplePop --linear --out testGWAS2 --pheno samplePheno.txt --within Population.txt --keep-cluster-names GBR TSI 
+
+c:\CeliaFiles\Programs\PLINK\plink --allow-no-sex --bfile samplePop --out testGWAS3 --pheno samplePheno.txt --within Population.txt --keep-cluster-names GBR --freq 
+
+
+###
+# although this works alleles are still ACTG
+c:\CeliaFiles\Programs\PLINK\plink --allow-no-sex --bfile samplePop --out Dtran --pheno samplePheno.txt --recode transpose
+
+c:\CeliaFiles\Programs\PLINK\plink --allow-no-sex --bfile DrecodeA --covar sampleCovar.txt --out eurGWAS --pheno samplePheno.txt --within Population.txt --keep-cluster-names CEU FIN GBR IBS TSI --recode transpose
+
+c:\CeliaFiles\Programs\PLINK\plink --allow-no-sex --bfile samplePop --covar sampleCovar.txt --linear --out aisGWAS --pheno samplePheno.txt --within Population.txt --keep-cluster-names CHB JPT --recode transpose
+
+
+# this works but must be read into R with Scan
+c:\CeliaFiles\Programs\PLINK\plink --allow-no-sex --bfile samplePop --covar sampleCovar.txt --linear --out afrGWAS --pheno samplePheno.txt --within Population.txt --keep-cluster-names ACB ASW ESN GWD MSL YRI --recodeA 
+
+# everyone recoded
+c:\CeliaFiles\Programs\PLINK\plink --allow-no-sex --bfile samplePop --covar sampleCovar.txt  --pheno samplePheno.txt --recode A --out DrecodeA
+
+
+
