@@ -1,0 +1,247 @@
+---
+title: "Hackathon 2019"
+author: "Celia M T Greenwood"
+date: "November 16, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Super Population results
+
+```{r}
+setwd("C:/users/celia.greenwood/Dropbox/HackathonNov2019MNI/")
+covarfile <- read.table("phenotype_information.tsv", header=TRUE,as.is=TRUE)
+write.table(data.frame(FID=covarfile$Family.ID, IID=covarfile$Individual.ID, 
+                       Population=covarfile$Population), 
+            file='Population.txt',
+            row.names=FALSE, col.names=FALSE,
+            quote=FALSE)
+
+# ACTG format
+#T.Data <- read.table("Dtran.tped", header = FALSE, sep = "",
+#                        as.is=TRUE, nrows = 5)
+
+#sampleRows <- sample(1:352265, 5000)
+#subsetdata <- matrix(NA, 5000, ncol(T.Data))
+#for (j in 1:5) {
+#   tmp <- read.table("Dtran.tped", header = FALSE, as.is=TRUE,
+#                               skip = sampleRows[j] -1, nrows = 1)
+#}
+
+
+# scan works. Tested with 5000 columns but want more.
+sampledCols <- sample(1:352265, 5000) + 4
+subsetdata <- matrix(NA, nrow(covarfile), ncol = 5000+4)
+typelist <- c(list("character","character", "integer", "integer",
+                   "integer","numeric"), as.list(rep("integer",352265)))
+# small
+rn <- rep(NA, nrow(covarfile))
+sampledRows <- sample(1:nrow(covarfile), 200)
+for (j in sampledRows) {
+#for (j in 1:nrow(covarfile)) {
+  tmp <- scan(file = "DrecodeA.raw", what = typelist,nlines=1, skip=j,
+            flush=TRUE )
+  tmp2 <- tmp[c(3,4,5,6,sampledCols)]
+  subsetdata[j,] <- as.numeric(unlist(tmp2))
+  rn[j] <- tmp[[1]]
+}
+rownames(subsetdata) <- rn
+
+
+subsetdata2 <- subsetdata[sampledRows,]
+subsetdata2[is.na(subsetdata2)]<-0
+subsetPop <- covarfile$Population[sampledRows]
+
+svds.1 <- svd(subsetdata2[,5:5004])
+
+par(omi = rep(0,4), mar = c(3,3,0.3,0.3), mgp = c(2,0,0))
+plot(svds.1$u[,1], svds.1$u[,2], type='n')
+poptable <- table(subsetPop)
+for (k in 1:length(poptable)) {
+   points(svds.1$u[which(subsetPop == names(poptable)[k]),1],
+          svds.1$u[which(subsetPop == names(poptable)[k]),2],
+          col=k, pch=15 + 1*(k>8), cex=0.7)
+  }
+
+legend(-0.067, 0.03, legend = names(poptable), col = 1:length(poptable),
+       pch = c(rep(15,8),rep(16,5)), cex=0.7)
+
+```
+```{r}
+typelist <- c(list("character","character", "integer", "integer",
+                   "integer","numeric"), as.list(rep("integer",352265)))
+
+# full dataset size
+rn <- rep(NA, 500)
+sampledRows <- (1:500)
+subsetdata1 <- matrix(NA, 500, ncol = length(typelist)-2)
+for (j in sampledRows) {
+  tmp <- scan(file = "DrecodeA.raw", what = typelist,nlines=1, skip=j,
+            flush=TRUE )
+  tmp2 <- tmp[c(3:length(tmp))]
+  subsetdata1[j,] <- as.numeric(unlist(tmp2))
+  rn[j] <- tmp[[1]]
+}
+rownames(subsetdata1) <- rn;  
+save(subsetdata1,file='SS1.RData'); 
+rm(subsetdata1)
+
+rn <- rep(NA, 500)
+sampledRows <- (501:1000)
+subsetdata2 <- matrix(NA, 500, ncol = length(typelist)-2)
+for (j in sampledRows) {
+  tmp <- scan(file = "DrecodeA.raw", what = typelist,nlines=1, skip=j,
+            flush=TRUE )
+  tmp2 <- tmp[c(3:length(tmp))]
+  subsetdata2[j-500,] <- as.numeric(unlist(tmp2))
+  rn[j-500] <- tmp[[1]]
+}
+rownames(subsetdata2) <- rn;  
+save(subsetdata2,file='SS2.RData'); 
+rm(subsetdata2)
+
+rn <- rep(NA, 272)
+sampledRows <- (1001:1272)
+subsetdata3 <- matrix(NA, 272, ncol = length(typelist)-2)
+for (j in sampledRows) {
+  tmp <- scan(file = "DrecodeA.raw", what = typelist,nlines=1, skip=j,
+            flush=TRUE )
+  tmp2 <- tmp[c(3:length(tmp))]
+  subsetdata3[j-1000,] <- as.numeric(unlist(tmp2))
+  rn[j-1000] <- tmp[[1]]
+}
+rownames(subsetdata3) <- rn;  
+save(subsetdata3,file='SS3.RData'); 
+#rm(subsetdata3)
+
+
+
+
+#j <- 1272
+#tmp <- scan(file = "DrecodeA.raw", what = typelist,nlines=1, skip=j,
+#            flush=TRUE )
+
+
+```
+
+# read in the GWAS results, Manhattan plot, simple PRS
+
+```{r}
+
+tmp <- read.table("testGWAS.assoc.linear", header=TRUE)
+tmp2 <- tmp[tmp$TEST=='ADD',]
+plot(c(min(tmp2$BP), max(tmp2$BP)), c(0, 12), type='n', xlab='Chr 19',
+     ylab = '-log10p')
+points(tmp2$BP, -log10(tmp2$P), cex=0.5, col='darkgray', pch=16)
+abline(h = -log10(5e-8))
+alfreq <- read.table("sampleFreq.frq", header=TRUE)
+snp.stderr <- sqrt(alfreq$MAF*(1-alfreq$MAF))
+load('SS1.RData')
+par(mfrow = c(2,2), omi = rep(0,4))
+
+which05 <- which(tmp2$P<0.05)
+subsetdata1[is.na(subsetdata1)] <-0
+score1.05 <-  subsetdata1[,(which05 + 4)] %*% 
+  as.matrix(tmp2$BETA[which05] / snp.stderr[which05], ncol=1)
+plot(subsetdata1[,4], score1.05, xlab='true', ylab='predicted p=0.05')
+
+
+
+
+```
+
+# separate by populations
+
+```{r}
+#ACB ASW CEU CHB ESN FIN GBR GWD IBS JPT MSL TSI YRI 
+which.pop <- which(covarfile$Population == names(poptable)[1])
+which.pop
+load("SS1.RData")
+pop.ACB <- subsetdata1[which.pop,]
+save(pop.ACB, file ="popACB.RData")
+
+which.pop <- which(covarfile$Population == names(poptable)[2])
+which.pop
+load("SS3.RData")
+pop.ASW <- subsetdata3[which.pop-1000,]
+save(pop.ASW, file ="popASW.RData")
+
+which.pop <- which(covarfile$Population == names(poptable)[3])
+which.pop
+load("SS2.RData")
+pop.CEU <- subsetdata2[which.pop-500,]
+save(pop.CEU, file ="popCEU.RData")
+
+which.pop <- which(covarfile$Population == names(poptable)[4])
+which.pop
+#load("SS3.RData")
+pop.CHB <- subsetdata2[which.pop-500,]
+save(pop.CHB, file ="popCHB.RData")
+
+which.pop <- which(covarfile$Population == names(poptable)[5])
+which.pop
+#load("SS3.RData")
+pop.ESN <- subsetdata1[which.pop[which.pop<=500],]
+pop.ESN <- rbind(pop.ESN, subsetdata2[which.pop[which.pop>500]-500,])
+save(pop.ESN, file ="popESN.RData")
+
+which.pop <- which(covarfile$Population == names(poptable)[6])
+which.pop
+#load("SS3.RData")
+pop.FIN <- subsetdata1[which.pop,]
+save(pop.FIN, file ="popFIN.RData")
+
+which.pop <- which(covarfile$Population == names(poptable)[7])
+which.pop
+pop.GBR <- subsetdata1[which.pop,]
+save(pop.GBR, file ="popGBR.RData")
+
+which.pop <- which(covarfile$Population == names(poptable)[8])
+which.pop
+#load("SS3.RData")
+pop.GWD <- subsetdata1[which.pop[which.pop<=500],]
+pop.GWD <- rbind(pop.GWD, subsetdata2[which.pop[which.pop>500]-500,])
+save(pop.GWD, file ="popGWD.RData")
+
+which.pop <- which(covarfile$Population == names(poptable)[9])
+which.pop
+pop.IBS <- subsetdata1[which.pop,]
+save(pop.IBS, file ="popIBS.RData")
+
+# JPT
+which.pop <- which(covarfile$Population == names(poptable)[10])
+which.pop
+pop.JPT <- subsetdata2[which.pop[(which.pop>500 & which.pop<=1000)]-500,]
+pop.JPT <- rbind(pop.JPT, subsetdata3[which.pop[which.pop>1000]-1000,])
+save(pop.JPT, file ="popJPT.RData")
+
+#MSL
+which.pop <- which(covarfile$Population == names(poptable)[11])
+which.pop
+pop.MSL <- subsetdata2[which.pop-500,]
+save(pop.MSL, file ="popMSL.RData")
+
+#TSI
+which.pop <- which(covarfile$Population == names(poptable)[12])
+which.pop
+pop.TSI <- subsetdata3[which.pop-1000,]
+save(pop.TSI, file ="popTSI.RData")
+
+#YRI
+which.pop <- which(covarfile$Population == names(poptable)[13])
+which.pop
+pop.YRI <- subsetdata2[which.pop[(which.pop>500 & which.pop<=1000)]-500,]
+pop.YRI <- rbind(pop.JPT, subsetdata3[which.pop[which.pop>1000]-1000,])
+save(pop.YRI, file ="popYRI.RData")
+
+
+
+
+
+
+
+
+```
