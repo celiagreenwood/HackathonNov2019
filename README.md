@@ -37,3 +37,7 @@ To analyze only a subset of the populations, this can be done within plink using
 c:\CeliaFiles\Programs\PLINK\plink --allow-no-sex --bfile samplePop --linear --out testGWAS2 --pheno samplePheno.txt --within Population.txt --keep-cluster-names GBR TSI
 
 Note that not all minor alleles are found in all populations.
+
+File that may make your lives easier. RData by population
+https://www.dropbox.com/s/kfpq7xdls8vtc5p/HackathonNov2019MNI.zip?dl=0
+
